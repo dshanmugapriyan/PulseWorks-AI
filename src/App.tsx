@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AnalyticsPage } from './components/AnalyticsPage';
 import { Navbar } from './components/Navbar';
+import { SettingsPage } from './components/SettingsPage';
 import { Sidebar } from './components/Sidebar';
 import { SystemBanner } from './components/SystemBanner';
 import { TaskCard } from './components/TaskCard';
@@ -8,7 +10,12 @@ import { appEnv } from './config/env';
 import { INITIAL_TASKS } from './data/initialTasks';
 import { SystemBannerEngine } from './lib/systemBannerEngine';
 import type { ValidatedTaskPayload } from './schemas/taskSchema';
-import type { SidebarFilter, TaskItem } from './types/task';
+import type { SidebarFilter, TaskItem, WorkspacePage } from './types/task';
+
+function getWorkspacePage(): WorkspacePage {
+  const page = window.location.hash.slice(2);
+  return page === 'analytics' || page === 'settings' ? page : 'tasks';
+}
 
 export function App() {
   const [bannerEngine] = useState(
@@ -21,6 +28,7 @@ export function App() {
       }),
   );
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
+  const [activePage, setActivePage] = useState<WorkspacePage>(getWorkspacePage);
   const [activeFilter, setActiveFilter] = useState<SidebarFilter>('all');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -39,6 +47,18 @@ export function App() {
   const visibleTasks = tasks.filter(
     (task) => activeFilter === 'all' || task.status === activeFilter,
   );
+
+  useEffect(() => {
+    const handleHashChange = () => setActivePage(getWorkspacePage());
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateTo = (page: WorkspacePage) => {
+    window.location.hash = `/${page}`;
+    setActivePage(page);
+    setMobileSidebarOpen(false);
+  };
 
   const handleCreateTask = (payload: ValidatedTaskPayload) => {
     const newTask: TaskItem = {
@@ -66,10 +86,13 @@ export function App() {
       <Navbar
         onOpenSidebar={() => setMobileSidebarOpen(true)}
         onOpenCreateModal={() => setCreateModalOpen(true)}
+        showCreateTaskButton={activePage === 'tasks'}
       />
 
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl">
         <Sidebar
+          activePage={activePage}
+          onSelectPage={navigateTo}
           activeFilter={activeFilter}
           onSelectFilter={setActiveFilter}
           counts={counts}
@@ -78,39 +101,45 @@ export function App() {
         />
 
         <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-10">
-          <div className="mb-6">
-            <p className="text-sm font-medium text-cyan-400">Workspace</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
-              AI tasks
-            </h1>
-            <p className="mt-2 text-sm text-slate-400">
-              Create and keep track of your AI tasks.
-            </p>
-          </div>
-
-          <section aria-label="Task list">
-            {visibleTasks.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-800 px-6 py-12 text-center">
-                <h2 className="font-medium text-white">No tasks here yet</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Create a task to get started.
+          {activePage === 'tasks' && (
+            <>
+              <div className="mb-6">
+                <p className="text-sm font-medium text-cyan-400">Workspace</p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
+                  AI tasks
+                </h1>
+                <p className="mt-2 text-sm text-slate-400">
+                  Create and keep track of your AI tasks.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setCreateModalOpen(true)}
-                  className="mt-4 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                >
-                  Create task
-                </button>
               </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {visibleTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
-                ))}
-              </div>
-            )}
-          </section>
+
+              <section aria-label="Task list">
+                {visibleTasks.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-800 px-6 py-12 text-center">
+                    <h2 className="font-medium text-white">No tasks here yet</h2>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Create a task to get started.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCreateModalOpen(true)}
+                      className="mt-4 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                    >
+                      Create task
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {visibleTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+          {activePage === 'analytics' && <AnalyticsPage tasks={tasks} />}
+          {activePage === 'settings' && <SettingsPage />}
         </main>
       </div>
 

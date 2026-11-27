@@ -1,8 +1,18 @@
 import { useEffect } from 'react';
-import { CheckCircle2, Clock3, Layers, Play, X } from 'lucide-react';
-import type { SidebarFilter } from '../types/task';
+import {
+  BarChart3,
+  CheckCircle2,
+  Clock3,
+  Layers,
+  Play,
+  Settings,
+  X,
+} from 'lucide-react';
+import type { SidebarFilter, WorkspacePage } from '../types/task';
 
 interface SidebarProps {
+  activePage: WorkspacePage;
+  onSelectPage: (page: WorkspacePage) => void;
   activeFilter: SidebarFilter;
   onSelectFilter: (filter: SidebarFilter) => void;
   counts: Record<SidebarFilter, number>;
@@ -23,6 +33,8 @@ const NAV_ITEMS: Array<{
 ];
 
 export function Sidebar({
+  activePage,
+  onSelectPage,
   activeFilter,
   onSelectFilter,
   counts,
@@ -39,37 +51,76 @@ export function Sidebar({
   }, [mobileOpen, onCloseMobile]);
 
   const navigation = (
-    <nav aria-label="Task status filters" className="space-y-1 p-3">
-      <p className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-        Tasks
-      </p>
-      {NAV_ITEMS.map((item) => {
-        const Icon = item.icon;
-        const selected = activeFilter === item.id;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            aria-current={selected ? 'page' : undefined}
-            onClick={() => {
-              onSelectFilter(item.id);
-              onCloseMobile();
-            }}
-            className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
-              selected
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
-            }`}
-          >
-            <span className="flex items-center gap-3">
+    <div className="space-y-5 p-3">
+      <nav aria-label="Workspace navigation" className="space-y-1">
+        <p className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+          Workspace
+        </p>
+        {(
+          [
+            { id: 'tasks', label: 'Tasks', icon: Layers },
+            { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+            { id: 'settings', label: 'Settings', icon: Settings },
+          ] as const
+        ).map((item) => {
+          const Icon = item.icon;
+          const selected = activePage === item.id;
+          return (
+            <a
+              key={item.id}
+              href={`#/${item.id}`}
+              aria-current={selected ? 'page' : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                onSelectPage(item.id);
+              }}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+                selected
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+              }`}
+            >
               <Icon className="h-4 w-4" aria-hidden="true" />
               {item.label}
-            </span>
-            <span className="text-xs text-slate-500">{counts[item.id]}</span>
-          </button>
-        );
-      })}
-    </nav>
+            </a>
+          );
+        })}
+      </nav>
+
+      {activePage === 'tasks' && (
+        <nav aria-label="Task status filters" className="space-y-1 border-t border-slate-800 pt-4">
+          <p className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+            Filter tasks
+          </p>
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const selected = activeFilter === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={selected ? 'true' : undefined}
+                onClick={() => {
+                  onSelectFilter(item.id);
+                  onCloseMobile();
+                }}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
+                  selected
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {item.label}
+                </span>
+                <span className="text-xs text-slate-500">{counts[item.id]}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+    </div>
   );
 
   return (

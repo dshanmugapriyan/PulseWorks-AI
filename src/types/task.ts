@@ -33,4 +33,5 @@ export interface SystemBannerNotice {
 }
 
 export type SidebarFilter = 'all' | TaskStatus;
+export type WorkspacePage = 'tasks' | 'analytics' | 'settings';
 
